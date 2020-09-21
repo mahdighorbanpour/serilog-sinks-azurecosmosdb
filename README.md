@@ -28,7 +28,7 @@ Log.Logger = new LoggerConfiguration()
 ```
 
 ## IPartitionKeyProvider
-The DefaultPartitionkeyProvide will generate a utc date string with the format "dddd.MM.yyyy". If you want to override it, you need to define a class and implement IPartitionKeyProvider interface and pass an instance of it in the arguments list.
+The DefaultPartitionkeyProvide will generate a utc date string with the format "dd.MM.yyyy". If you want to override it, you need to define a class and implement IPartitionKeyProvider interface and pass an instance of it in the arguments list.
 
 ## TTL (Time-to-live)
 
