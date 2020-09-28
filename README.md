@@ -2,7 +2,7 @@
 A Serilog sink that writes to Azure CosmosDB and supports PartitionKey for better performance. This code is based on [serilog-sinks-azuredocumentdb](https://github.com/serilog/serilog-sinks-azuredocumentdb) and adapted to use the latest Microsof.Azure.Cosmos SDK version 3.12.0 and uses a custom JsonSerializationSettings which helps to keep the sink alive when serialization fails sometimes specially for Exceptions!
 
 ## Getting started
-Nuget package is on the way to be prepared! please be patient.
+You can start by installing the [NuGet package](https://www.nuget.org/packages/Serilog.Sinks.AzureCosmosDB/1.0.0).
 
 
 
