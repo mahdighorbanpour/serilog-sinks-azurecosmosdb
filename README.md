@@ -83,7 +83,7 @@ In your application's App.config or Web.config file, specify the CosmosDB sink a
 ```XML
 <appSettings>
   <add key="serilog:using:AzureCosmosDB" value="Serilog.Sinks.AzureCosmosDB" />
-  <add key="serilog:write-to:AzureCosmosDB.endpointUrl" value="https://****.documents.azure.com:443" />
+  <add key="serilog:write-to:AzureCosmosDB.endpointUrl" value="https://****.cosmos.azure.com:443" />
   <add key="serilog:write-to:AzureCosmosDB.authorizationKey" value="****" />
     
   <!-- Liefspan of log messages in CosmosDB in seconds, leave empty to disable expiration. -->
@@ -92,4 +92,4 @@ In your application's App.config or Web.config file, specify the CosmosDB sink a
 ```
 
 ## Performance
-Sink buffers log internally and flush to Azure CosmosDB in batches using dedicated thread. However, it highly depends on type of Azure DocumentDB subscription you have. 
+Sink buffers log internally and flush to Azure CosmosDB in batches using dedicated thread. However, it highly depends on type of Azure CosmosDB subscription you have. 
