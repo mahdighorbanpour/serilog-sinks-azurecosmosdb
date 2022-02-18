@@ -1,4 +1,8 @@
 ﻿
 /.vs
 /src/bin/
-/src/obj
+/src/obj/
+/src/.vs/
+Serilog.Sinks.AzureCosmosDB.TestRunner/bin
+Serilog.Sinks.AzureCosmosDB.TestRunner/obj
+Serilog.Sinks.AzureCosmosDB.TestRunner/appsettings.json
