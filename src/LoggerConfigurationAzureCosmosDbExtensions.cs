@@ -17,6 +17,7 @@ using Serilog.Configuration;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.AzureCosmosDB;
+using Serilog.Sinks.PeriodicBatching;
 
 namespace Serilog
 {
@@ -87,19 +88,35 @@ namespace Serilog
                 throw new ArgumentOutOfRangeException(nameof(timeToLive));
             }
 
-            return loggerConfiguration.Sink(
-                new AzureCosmosDBSink(
-                    endpointUri,
-                    authorizationKey,
-                    databaseName,
-                    collectionName,
-                    partitionKey,
-                    partitionKeyProvider,
-                    formatProvider,
-                    storeTimestampInUtc,
-                    timeToLive,
-                    logBufferSize,
-                    batchSize),
+            
+
+            var sinkOptions = new AzureCosmosDbSinkOptions()
+            {
+                EndpointUri = endpointUri,
+                PartitionKey = partitionKey,
+                FormatProvider = formatProvider,
+                AuthorizationKey = authorizationKey,
+                BatchPostingLimit = batchSize,
+                CollectionName = collectionName,
+                DatabaseName = databaseName,
+                PartitionKeyProvider = partitionKeyProvider,
+                Period = TimeSpan.FromSeconds(2),
+                QueueSizeLimit = logBufferSize,
+                StoreTimestampInUTC = storeTimestampInUtc,
+                TimeToLive = timeToLive
+            };
+
+            var batchingOptions = new PeriodicBatchingSinkOptions
+            {
+                BatchSizeLimit = sinkOptions.BatchPostingLimit,
+                Period = sinkOptions.Period,
+                EagerlyEmitFirstEvent = true,
+                QueueLimit = sinkOptions.QueueSizeLimit
+            };
+
+            var cosmosSink = new AzureCosmosDBSink(sinkOptions);
+            var batchingSink = new PeriodicBatchingSink(cosmosSink, batchingOptions);
+            return loggerConfiguration.Sink(batchingSink,
                 restrictedToMinimumLevel,
                 levelSwitch);
         }
@@ -168,19 +185,74 @@ namespace Serilog
                 timeSpan = TimeSpan.FromSeconds(Math.Max(-1, timeToLive.Value));
             }
 
-            return loggerConfiguration.Sink(
-                new AzureCosmosDBSink(
-                    endpointUrl,
-                    authorizationKey,
-                    databaseName,
-                    collectionName,
-                    partitionKey,
-                    partitionKeyProvider,
-                    formatProvider,
-                    storeTimestampInUtc,
-                    timeSpan,
-                    logBufferSize,
-                    batchSize),
+            var sinkOptions = new AzureCosmosDbSinkOptions()
+            {
+                EndpointUri = endpointUrl,
+                PartitionKey = partitionKey,
+                FormatProvider = formatProvider,
+                AuthorizationKey = authorizationKey,
+                BatchPostingLimit = batchSize,
+                CollectionName = collectionName,
+                DatabaseName = databaseName,
+                PartitionKeyProvider = partitionKeyProvider,
+                Period = TimeSpan.FromSeconds(2),
+                QueueSizeLimit = logBufferSize,
+                StoreTimestampInUTC = storeTimestampInUtc,
+                TimeToLive = timeSpan
+            };
+
+            var batchingOptions = new PeriodicBatchingSinkOptions
+            {
+                BatchSizeLimit = sinkOptions.BatchPostingLimit,
+                Period = sinkOptions.Period,
+                EagerlyEmitFirstEvent = true,
+                QueueLimit = sinkOptions.QueueSizeLimit
+            };
+
+            var cosmosSink = new AzureCosmosDBSink(sinkOptions);
+            var batchingSink = new PeriodicBatchingSink(cosmosSink, batchingOptions);
+            return loggerConfiguration.Sink(batchingSink,
+                restrictedToMinimumLevel,
+                levelSwitch);
+        }
+
+        public static LoggerConfiguration AzureCosmosDB(
+            this LoggerSinkConfiguration loggerConfiguration,
+            AzureCosmosDbSinkOptions options,
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
+            LoggingLevelSwitch levelSwitch = null)
+        {
+            if (loggerConfiguration == null)
+            {
+                throw new ArgumentNullException(nameof(loggerConfiguration));
+            }
+
+            if (string.IsNullOrWhiteSpace(options.EndpointUri?.ToString()))
+            {
+                throw new ArgumentNullException(nameof(options.EndpointUri));
+            }
+
+            if (string.IsNullOrWhiteSpace(options.AuthorizationKey))
+            {
+                throw new ArgumentNullException(nameof(options.AuthorizationKey));
+            }
+
+            if ((options.TimeToLive != null) && (options.TimeToLive.Value.TotalSeconds > TimeSpan.FromDays(24_855).TotalSeconds))
+            {
+                throw new ArgumentOutOfRangeException(nameof(options.TimeToLive));
+            }
+
+            var batchingOptions = new PeriodicBatchingSinkOptions
+            {
+                BatchSizeLimit = options.BatchPostingLimit,
+                Period = options.Period,
+                EagerlyEmitFirstEvent = true,
+                QueueLimit = options.QueueSizeLimit
+            };
+
+            var cosmosSink = new AzureCosmosDBSink(options);
+            var batchingSink = new PeriodicBatchingSink(cosmosSink, batchingOptions);
+            return loggerConfiguration.Sink(batchingSink,
                 restrictedToMinimumLevel,
                 levelSwitch);
         }
