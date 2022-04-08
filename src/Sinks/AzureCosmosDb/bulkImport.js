@@ -3,8 +3,7 @@
 
 	// The count of imported docs, also used as current doc index.
 	var count = 0;
-
-	// Validate input.
+    // Validate input.
 	if (!docs) throw new Error("The array is undefined or null.");
 
 	var docsLength = docs.length;
@@ -18,8 +17,8 @@
 				docs[i],
 				function (err, documentCreated) {
 					if (err) {
-						console.warn(err)
-					}
+                        console.log(err);
+                    }
 				});
 			if (!accepted) break;
 			count++;

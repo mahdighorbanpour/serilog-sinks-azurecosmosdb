@@ -242,10 +242,19 @@ namespace Serilog.Sinks.AzureCosmosDB
                 var storedProcedureResponse = await _container.Scripts.ExecuteStoredProcedureAsync<int>(
                     storedProcedureId: BulkStoredProcedureId,
                     partitionKey: new PartitionKey(partitionKeyValue),
-                    parameters: new dynamic[] { args });
+                    parameters: new dynamic[] { args },
+                    new StoredProcedureRequestOptions()
+                    {
+                        EnableScriptLogging = true
+                    });
                 if (storedProcedureResponse.StatusCode != HttpStatusCode.OK)
                 {
                     SelfLog.WriteLine("Unknown error writing to Cosmos. {0}", storedProcedureResponse.Diagnostics.ToString());
+                }
+
+                if (!string.IsNullOrWhiteSpace(storedProcedureResponse.ScriptLog))
+                {
+                    SelfLog.WriteLine("Error writing at least one log to Cosmos. {0}", storedProcedureResponse.ScriptLog);
                 }
                 return new LogShipResult()
                 {

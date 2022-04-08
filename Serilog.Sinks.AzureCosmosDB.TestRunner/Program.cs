@@ -21,7 +21,8 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.AzureCosmosDB(new AzureCosmosDbSinkOptions()
     {
         EndpointUri = new System.Uri(configuration["AppSettings:AzureCosmosUri"]),
-        AuthorizationKey = configuration["AppSettings:AzureCosmosKey"]
+        AuthorizationKey = configuration["AppSettings:AzureCosmosKey"],
+        DatabaseName = "TestDb"
     })
     .CreateLogger();
 

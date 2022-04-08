@@ -1,8 +1,8 @@
 # Serilog.Sinks.AzureCosmosDB
-A Serilog sink that writes to Azure CosmosDB and supports PartitionKey for better performance. This code is based on [serilog-sinks-azuredocumentdb](https://github.com/serilog/serilog-sinks-azuredocumentdb) and adapted to use the latest Microsof.Azure.Cosmos SDK version 3.12.0 and uses a custom JsonSerializationSettings which helps to keep the sink alive when serialization fails sometimes specially for Exceptions!
+A Serilog sink that writes to Azure CosmosDB and supports PartitionKey for better performance. This code is based on [serilog-sinks-azuredocumentdb](https://github.com/serilog/serilog-sinks-azuredocumentdb) and adapted to use the latest Microsof.Azure.Cosmos SDK version 3.24.0 and uses a custom JsonSerializationSettings which helps to keep the sink alive when serialization fails sometimes specially for Exceptions!
 
 ## Getting started
-You can start by installing the [NuGet package](https://www.nuget.org/packages/Serilog.Sinks.AzureCosmosDB/1.0.0).
+You can start by installing the [NuGet package](https://www.nuget.org/packages/Serilog.Sinks.AzureCosmosDB).
 
 
 
@@ -92,4 +92,4 @@ In your application's App.config or Web.config file, specify the CosmosDB sink a
 ```
 
 ## Performance
-Sink buffers log internally and flush to Azure CosmosDB in batches using dedicated thread. However, it highly depends on type of Azure CosmosDB subscription you have. 
+Sink buffers log internally and flush to Azure CosmosDB in batches using `Serilog.Sinks.PeriodicBatching` and is configurable. However, it highly depends on type of Azure CosmosDB subscription you have. 
