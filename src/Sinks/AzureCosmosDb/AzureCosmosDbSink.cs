@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,8 +47,37 @@ namespace Serilog.Sinks.AzureCosmosDB
         private readonly string _partitionKey = "UtcDate";
         private readonly IPartitionKeyProvider _partitionKeyProvider;
 
-        public AzureCosmosDBSink(
-            AzureCosmosDbSinkOptions options)
+        public AzureCosmosDBSink(CosmosClient client, AzureCosmosDbSinkOptions options)
+        {
+            _formatProvider = options.FormatProvider;
+            _partitionKey = options.PartitionKey;
+            _partitionKeyProvider = options.PartitionKeyProvider ?? new DefaultPartitionKeyProvider(_formatProvider);
+
+            if ((options.TimeToLive != null) && (options.TimeToLive.Value != TimeSpan.MaxValue))
+                _timeToLive = (int)options.TimeToLive.Value.TotalSeconds;
+
+            _storeTimestampInUtc = options.StoreTimestampInUTC;
+
+            var serializerSettings = new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                ContractResolver = new DefaultContractResolver(),
+            };
+            serializerSettings.Error += (object sender, Newtonsoft.Json.Serialization.ErrorEventArgs args) =>
+            {
+                // only log an error once
+                if (args.CurrentObject == args.ErrorContext.OriginalObject)
+                {
+                    SelfLog.WriteLine("Serialization Error: {0}" + args.ErrorContext.Error);
+                    args.ErrorContext.Handled = true;
+                }
+            };
+            client.ClientOptions.Serializer = new NewtonsoftJsonCosmosSerializer(serializerSettings);
+            _client = client;
+            CreateDatabaseAndContainerIfNotExistsAsync(options.DatabaseName, options.CollectionName, options.PartitionKey).Wait();
+        }
+
+        public AzureCosmosDBSink(AzureCosmosDbSinkOptions options)
         {
             _formatProvider   = options.FormatProvider;
             _partitionKey = options.PartitionKey;
@@ -73,11 +103,23 @@ namespace Serilog.Sinks.AzureCosmosDB
                 }
              };
 
-            _client = new CosmosClientBuilder(options.EndpointUri.ToString(), options.AuthorizationKey)
+            var builder = new CosmosClientBuilder(options.EndpointUri.ToString(), options.AuthorizationKey)
               .WithCustomSerializer(new NewtonsoftJsonCosmosSerializer(serializerSettings))
-              .WithConnectionModeGateway()
-              .Build();
-            
+              .WithConnectionModeGateway();
+
+            if (options.DisableSSL)
+                builder.WithHttpClientFactory(() =>
+                {
+                    HttpMessageHandler httpMessageHandler = new HttpClientHandler()
+                    {
+                        ServerCertificateCustomValidationCallback = (w, x, y, z) => true,
+
+                    };
+                    return new HttpClient(httpMessageHandler);
+                });
+
+            _client = builder.Build();
+
             CreateDatabaseAndContainerIfNotExistsAsync(options.DatabaseName, options.CollectionName, options.PartitionKey).Wait();
         }
 
@@ -124,7 +166,7 @@ namespace Serilog.Sinks.AzureCosmosDB
                 {
                     using (var reader = new StreamReader(resourceStream))
                     {
-                        var bulkImportSrc = await reader.ReadToEndAsync().ConfigureAwait(false);
+                        var bulkImportSrc = await reader.ReadToEndAsync();
                         try
                         {
                             var sprocExists = await CheckStoredProcedureExists(BulkStoredProcedureId);

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using System;
+using Microsoft.Azure.Cosmos;
 using Serilog.Configuration;
 using Serilog.Core;
 using Serilog.Events;
@@ -27,6 +28,87 @@ namespace Serilog
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "<Pending>")]
     public static class LoggerConfigurationAzureCosmosDBExtensions
     {
+
+        /// <summary>
+        ///     Adds a sink that writes log events to a Azure CosmosDB table in the provided endpoint.
+        /// </summary>
+        /// <param name="loggerConfiguration">The logger configuration.</param>
+        /// <param name="client">The cosmos client to use for operations</param>
+        /// <param name="databaseName">The name of the database to use; will create if it doesn't exist.</param>
+        /// <param name="collectionName">The name of the collection to use inside the database; will created if it doesn't exist.</param>
+        /// <param name="partitionKey">The name of partition key for the collection.</param>
+        /// <param name="partitionKeyProvider">A value provider for partition key. If none provided, the default will be used.</param>
+        /// <param name="restrictedToMinimumLevel">The minimum log event level required in order to write an event to the sink.</param>
+        /// <param name="formatProvider">Supplies culture-specific formatting information, or null.</param>
+        /// <param name="storeTimestampInUtc">Store Timestamp in UTC</param>
+        /// <param name="timeToLive">The lifespan of documents in seconds. Set null to disable document expiration. </param>
+        /// <param name="logBufferSize">Maximum number of log entries this sink can hold before stop accepting log messages. Supported size is between 5000 and 25000</param>
+        /// <param name="batchSize">Number of log messages to be sent as batch. Supported range is between 1 and 1000</param>
+        /// <param name="levelSwitch">
+        /// A switch allowing the pass-through minimum level to be changed at runtime.
+        /// </param>
+        /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">A required parameter value is out of acceptable range.</exception>
+        public static LoggerConfiguration AzureCosmosDB(
+                this LoggerSinkConfiguration loggerConfiguration,
+                CosmosClient client,
+                string databaseName = "Diagnostics",
+                string collectionName = "Logs",
+                string partitionKey = "UtcDate",
+                IPartitionKeyProvider partitionKeyProvider = null,
+                LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
+                IFormatProvider formatProvider = null,
+                bool storeTimestampInUtc = true,
+                //Protocol connectionProtocol = Protocol.Https,
+                TimeSpan? timeToLive = null,
+                int logBufferSize = 25_000,
+                int batchSize = 100,
+                LoggingLevelSwitch levelSwitch = null
+            )
+        {
+            if (loggerConfiguration == null)
+            {
+                throw new ArgumentNullException(nameof(loggerConfiguration));
+            }
+
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            if ((timeToLive != null) && (timeToLive.Value > TimeSpan.FromDays(24_855)))
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeToLive));
+            }
+
+            var sinkOptions = new AzureCosmosDbSinkOptions()
+            {
+                PartitionKey = partitionKey,
+                FormatProvider = formatProvider,
+                BatchPostingLimit = batchSize,
+                CollectionName = collectionName,
+                DatabaseName = databaseName,
+                PartitionKeyProvider = partitionKeyProvider,
+                Period = TimeSpan.FromSeconds(2),
+                QueueSizeLimit = logBufferSize,
+                StoreTimestampInUTC = storeTimestampInUtc,
+                TimeToLive = timeToLive
+            };
+
+            var batchingOptions = new PeriodicBatchingSinkOptions
+            {
+                BatchSizeLimit = sinkOptions.BatchPostingLimit,
+                Period = sinkOptions.Period,
+                EagerlyEmitFirstEvent = true,
+                QueueLimit = sinkOptions.QueueSizeLimit
+            };
+
+            var cosmosSink = new AzureCosmosDBSink(client, sinkOptions);
+            var batchingSink = new PeriodicBatchingSink(cosmosSink, batchingOptions);
+            return loggerConfiguration.Sink(batchingSink,
+                restrictedToMinimumLevel,
+                levelSwitch);
+        }
         /// <summary>
         ///     Adds a sink that writes log events to a Azure CosmosDB table in the provided endpoint.
         /// </summary>
@@ -49,6 +131,7 @@ namespace Serilog
         /// <param name="levelSwitch">
         /// A switch allowing the pass-through minimum level to be changed at runtime.
         /// </param>
+        /// <param name="disableSSL">Disables ssl on cosmos client. Should be used for testing purposes only</param>
         /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">A required parameter value is out of acceptable range.</exception>
         public static LoggerConfiguration AzureCosmosDB(
@@ -66,7 +149,8 @@ namespace Serilog
             TimeSpan? timeToLive = null,
             int logBufferSize = 25_000,
             int batchSize = 100,
-            LoggingLevelSwitch levelSwitch = null)
+            LoggingLevelSwitch levelSwitch = null,
+            bool disableSSL = false)
         {
             if (loggerConfiguration == null)
             {
@@ -88,10 +172,9 @@ namespace Serilog
                 throw new ArgumentOutOfRangeException(nameof(timeToLive));
             }
 
-            
-
             var sinkOptions = new AzureCosmosDbSinkOptions()
             {
+                DisableSSL = disableSSL,
                 EndpointUri = endpointUri,
                 PartitionKey = partitionKey,
                 FormatProvider = formatProvider,
@@ -141,6 +224,7 @@ namespace Serilog
         /// <param name="levelSwitch">
         /// A switch allowing the pass-through minimum level to be changed at runtime.
         /// </param>
+        /// <param name="disableSSL">Disables ssl on cosmos client. Should be used for testing purposes only</param>
         /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">A required parameter value is out of acceptable range.</exception>
         public static LoggerConfiguration AzureCosmosDB(
@@ -157,7 +241,8 @@ namespace Serilog
             int? timeToLive = null,
             int logBufferSize = 25_000,
             int batchSize = 100,
-            LoggingLevelSwitch levelSwitch = null)
+            LoggingLevelSwitch levelSwitch = null,
+            bool disableSSL = false)
         {
             if (loggerConfiguration == null)
             {
@@ -187,6 +272,7 @@ namespace Serilog
 
             var sinkOptions = new AzureCosmosDbSinkOptions()
             {
+                DisableSSL = disableSSL,
                 EndpointUri = endpointUrl,
                 PartitionKey = partitionKey,
                 FormatProvider = formatProvider,
