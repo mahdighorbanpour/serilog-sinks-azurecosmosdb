@@ -26,6 +26,17 @@ Log.Logger = new LoggerConfiguration()
                 )
                 .CreateLogger();
 ```
+Alternatively, you can use an Azure.Core.TokenCredential object to authenticate instead of an authorization key
+
+```C#
+Log.Logger = new LoggerConfiguration()
+                .WriteTo.AzureCosmosDB(
+                    endpointUri: <uri>,
+                    tokenCredential: <token credential>,
+                    partitionKey: "MyCustomKeyName"
+                )
+                .CreateLogger();
+```
 
 ## IPartitionKeyProvider
 The DefaultPartitionkeyProvide will generate a utc date string with the format "dd.MM.yyyy". If you want to override it, you need to define a class and implement IPartitionKeyProvider interface and pass an instance of it in the arguments list.
