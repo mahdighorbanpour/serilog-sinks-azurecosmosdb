@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Azure.Core;
 
 namespace Serilog.Sinks.AzureCosmosDB
 {
@@ -32,7 +33,12 @@ namespace Serilog.Sinks.AzureCosmosDB
         }
 
         public Uri EndpointUri { get; set; }
+        /// <summary>
+        /// Note: If TokenCredential is not null, it will be used to authenticate over the
+        /// AuthorizationKey. 
+        /// </summary>
         public string AuthorizationKey { get; set; }
+        public TokenCredential TokenCredential { get; set; }
         public string DatabaseName { get; set; }
         public string CollectionName { get; set; }
         public string PartitionKey { get; set; }

@@ -18,6 +18,7 @@ using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.AzureCosmosDB;
 using Serilog.Sinks.PeriodicBatching;
+using Azure.Core;
 
 namespace Serilog
 {
@@ -32,7 +33,8 @@ namespace Serilog
         /// </summary>
         /// <param name="loggerConfiguration">The logger configuration.</param>
         /// <param name="endpointUri">The endpoint URI of the document db.</param>
-        /// <param name="authorizationKey">The authorization key of the db.</param>
+        /// <param name="authorizationKey">The authorization key of the db. Use this or tokenCredential. tokenCredential has precedence.</param>
+        /// <param name="tokenCredential">The Azure TokenCredential for cosmos access. Use this or authorizationKey. This has precedence.</param>
         /// <param name="databaseName">The name of the database to use; will create if it doesn't exist.</param>
         /// <param name="collectionName">The name of the collection to use inside the database; will created if it doesn't exist.</param>
         /// <param name="partitionKey">The name of partition key for the collection.</param>
@@ -54,10 +56,11 @@ namespace Serilog
         public static LoggerConfiguration AzureCosmosDB(
             this LoggerSinkConfiguration loggerConfiguration,
             Uri endpointUri,
-            string authorizationKey,
+            string authorizationKey = null,
+            TokenCredential tokenCredential = null,
             string databaseName = "Diagnostics",
             string collectionName = "Logs",
-            string partitionKey = "UtcDate",
+            string partitionKey = "UtcDate", 
             IPartitionKeyProvider partitionKeyProvider = null,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             IFormatProvider formatProvider = null,
@@ -96,6 +99,7 @@ namespace Serilog
                 PartitionKey = partitionKey,
                 FormatProvider = formatProvider,
                 AuthorizationKey = authorizationKey,
+                TokenCredential = tokenCredential,
                 BatchPostingLimit = batchSize,
                 CollectionName = collectionName,
                 DatabaseName = databaseName,
@@ -127,7 +131,8 @@ namespace Serilog
         /// </summary>
         /// <param name="loggerConfiguration">The logger configuration.</param>
         /// <param name="endpointUrl">The endpoint url of the document db.</param>
-        /// <param name="authorizationKey">The authorization key of the db.</param>
+        /// <param name="authorizationKey">The authorization key of the db. Use this or tokenCredential. tokenCredential has precedence.</param>
+        /// <param name="tokenCredential">The Azure TokenCredential for cosmos access. Use this or authorizationKey. This has precedence.</param>
         /// <param name="databaseName">The name of the database to use; will create if it doesn't exist.</param>
         /// <param name="collectionName">The name of the collection to use inside the database; will created if it doesn't exist.</param>
         /// <param name="partitionKey">The name of partition key for the collection.</param>
@@ -146,7 +151,8 @@ namespace Serilog
         public static LoggerConfiguration AzureCosmosDB(
             this LoggerSinkConfiguration loggerConfiguration,
             Uri endpointUrl,
-            string authorizationKey,
+            string authorizationKey = null,
+            TokenCredential tokenCredential = null,
             string databaseName = "Diagnostics",
             string collectionName = "Logs",
             string partitionKey = "UtcDate",
@@ -169,9 +175,9 @@ namespace Serilog
                 throw new ArgumentNullException(nameof(endpointUrl));
             }
 
-            if (authorizationKey == null)
+            if (authorizationKey == null && tokenCredential == null)
             {
-                throw new ArgumentNullException(nameof(authorizationKey));
+                throw new ArgumentNullException(nameof(authorizationKey), $"{nameof(authorizationKey)} and {nameof(tokenCredential)} cannot both be null!");
             }
 
             if ((timeToLive != null) && (timeToLive.Value > TimeSpan.FromDays(24_855).TotalSeconds))
@@ -191,6 +197,7 @@ namespace Serilog
                 PartitionKey = partitionKey,
                 FormatProvider = formatProvider,
                 AuthorizationKey = authorizationKey,
+                TokenCredential = tokenCredential,
                 BatchPostingLimit = batchSize,
                 CollectionName = collectionName,
                 DatabaseName = databaseName,
@@ -232,9 +239,9 @@ namespace Serilog
                 throw new ArgumentNullException(nameof(options.EndpointUri));
             }
 
-            if (string.IsNullOrWhiteSpace(options.AuthorizationKey))
+            if (string.IsNullOrWhiteSpace(options.AuthorizationKey) && options.TokenCredential == null)
             {
-                throw new ArgumentNullException(nameof(options.AuthorizationKey));
+                throw new ArgumentNullException(nameof(options.AuthorizationKey), $"{nameof(options.AuthorizationKey)} and {nameof(options.TokenCredential)} cannot both be null!");
             }
 
             if ((options.TimeToLive != null) && (options.TimeToLive.Value.TotalSeconds > TimeSpan.FromDays(24_855).TotalSeconds))
