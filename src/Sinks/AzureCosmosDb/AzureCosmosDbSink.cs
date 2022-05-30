@@ -73,10 +73,20 @@ namespace Serilog.Sinks.AzureCosmosDB
                 }
              };
 
-            _client = new CosmosClientBuilder(options.EndpointUri.ToString(), options.AuthorizationKey)
-              .WithCustomSerializer(new NewtonsoftJsonCosmosSerializer(serializerSettings))
-              .WithConnectionModeGateway()
-              .Build();
+            if (options.TokenCredential != null)
+            {
+                _client = new CosmosClientBuilder(options.EndpointUri.ToString(), options.TokenCredential)
+                  .WithCustomSerializer(new NewtonsoftJsonCosmosSerializer(serializerSettings))
+                  .WithConnectionModeGateway()
+                  .Build();
+            }
+            else
+            {
+                _client = new CosmosClientBuilder(options.EndpointUri.ToString(), options.AuthorizationKey)
+                  .WithCustomSerializer(new NewtonsoftJsonCosmosSerializer(serializerSettings))
+                  .WithConnectionModeGateway()
+                  .Build();
+            }
             
             CreateDatabaseAndContainerIfNotExistsAsync(options.DatabaseName, options.CollectionName, options.PartitionKey).Wait();
         }
