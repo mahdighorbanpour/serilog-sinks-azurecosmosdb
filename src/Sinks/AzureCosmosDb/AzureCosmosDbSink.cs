@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -37,6 +38,8 @@ namespace Serilog.Sinks.AzureCosmosDB
     internal class AzureCosmosDBSink : IBatchedLogEventSink
     {
         private const string BulkStoredProcedureId = "BulkImport";
+        private const string BulkStoredProcedureVersionId = "BulkImportVersion";
+        private const string ExpectedProcedureVersion = "2.0.0";
         private readonly CosmosClient _client;
         private readonly IFormatProvider _formatProvider;
         private readonly bool _storeTimestampInUtc;
@@ -103,19 +106,26 @@ namespace Serilog.Sinks.AzureCosmosDB
             
         }
 
-        private async Task CreateBulkImportStoredProcedureAsync(bool dropExistingProc = false)
+        private Version GetCurrentAssemblyVersion()
+        {
+            var currentAssembly = typeof(AzureCosmosDBSink).GetTypeInfo().Assembly;
+            return currentAssembly.GetName().Version;
+        }
+
+
+        private async Task<string> GetScriptContents(string scriptName)
         {
             var currentAssembly = typeof(AzureCosmosDBSink).GetTypeInfo().Assembly;
 
             SelfLog.WriteLine("Getting required resource.");
             var resourceName = currentAssembly.GetManifestResourceNames()
-                                              .FirstOrDefault(w => w.EndsWith("bulkImport.js", StringComparison.InvariantCultureIgnoreCase));
+                .FirstOrDefault(w => w.EndsWith(scriptName, StringComparison.InvariantCultureIgnoreCase));
 
             if (string.IsNullOrEmpty(resourceName))
             {
                 SelfLog.WriteLine("Unable to find required resource.");
 
-                return;
+                return null;
             }
 
             using (var resourceStream = currentAssembly.GetManifestResourceStream(resourceName))
@@ -125,33 +135,70 @@ namespace Serilog.Sinks.AzureCosmosDB
                     using (var reader = new StreamReader(resourceStream))
                     {
                         var bulkImportSrc = await reader.ReadToEndAsync().ConfigureAwait(false);
-                        try
-                        {
-                            var sprocExists = await CheckStoredProcedureExists(BulkStoredProcedureId);
-                            if (sprocExists && dropExistingProc)
-                            {
-                                await _container.Scripts.DeleteStoredProcedureAsync(BulkStoredProcedureId);
-                                sprocExists = false;
-                            }
-
-                            if (!sprocExists)
-                            {
-                                await _container.Scripts.CreateStoredProcedureAsync(new StoredProcedureProperties()
-                                {
-                                    Id = BulkStoredProcedureId,
-                                    Body = bulkImportSrc,
-                                });
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            
-                            SelfLog.WriteLine("Failed to update bulk stored procedure. {0}", ex);
-                        }
+                        return bulkImportSrc;
                     }
                 }
             }
+
+            return null;
         }
+
+        private async Task CreateBulkImportStoredProcedureAsync()
+        {
+
+            try
+            {
+                var versionSprocExists = await CheckStoredProcedureExists(BulkStoredProcedureVersionId);
+                var versionValid = false;
+                var expectedVersion = GetCurrentAssemblyVersion();
+                if (versionSprocExists)
+                {
+                    //check version
+                    var version = new Version((await TryGetCosmosBulkImportVersion()).Version);
+                    if (version == expectedVersion)
+                    {
+                        versionValid = true;
+                    }
+                }
+                else
+                {
+                    await _container.Scripts.CreateStoredProcedureAsync(new StoredProcedureProperties()
+                    {
+                        Id = BulkStoredProcedureVersionId,
+                        Body = (await GetScriptContents("bImportVersionCheck.js")).Replace("#ASSEMBLYVERSION#", expectedVersion.ToString()),
+                    });
+                }
+
+                var sprocExists = await CheckStoredProcedureExists(BulkStoredProcedureId);
+                if (sprocExists && !versionValid)
+                {
+                    await _container.Scripts.DeleteStoredProcedureAsync(BulkStoredProcedureId);
+                    await _container.Scripts.DeleteStoredProcedureAsync(BulkStoredProcedureVersionId);
+                    sprocExists = false;
+                }
+
+                if (!sprocExists)
+                {
+                    await _container.Scripts.CreateStoredProcedureAsync(new StoredProcedureProperties()
+                    {
+                        Id = BulkStoredProcedureId,
+                        Body = await GetScriptContents("bulkImport.js"),
+                    });
+                    await _container.Scripts.CreateStoredProcedureAsync(new StoredProcedureProperties()
+                    {
+                        Id = BulkStoredProcedureVersionId,
+                        Body = (await GetScriptContents("bImportVersionCheck.js")).Replace("#ASSEMBLYVERSION#", expectedVersion.ToString()),
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+
+                SelfLog.WriteLine("Failed to update bulk stored procedure. {0}", ex);
+            }
+        }
+
+
 
         private async Task<bool> CheckStoredProcedureExists(string id)
         {
@@ -287,6 +334,31 @@ namespace Serilog.Sinks.AzureCosmosDB
             }
         }
 
+        private async Task<BulkInsertVersionResult> TryGetCosmosBulkImportVersion()
+        {
+            var storedProcedureResponse = await _container.Scripts.ExecuteStoredProcedureAsync<string>(
+                storedProcedureId: BulkStoredProcedureVersionId,
+                partitionKey: new PartitionKey("test"),
+                parameters: new dynamic[] { },
+                new StoredProcedureRequestOptions()
+                {
+                    EnableScriptLogging = true
+                });
+            if (storedProcedureResponse.StatusCode != HttpStatusCode.OK)
+            {
+                SelfLog.WriteLine("Unknown error writing to Cosmos. {0}", storedProcedureResponse.Diagnostics.ToString());
+            }
+
+            if (!string.IsNullOrWhiteSpace(storedProcedureResponse.ScriptLog))
+            {
+                SelfLog.WriteLine("Error writing at least one log to Cosmos. {0}", storedProcedureResponse.ScriptLog);
+            }
+            return new BulkInsertVersionResult()
+            {
+                Version = storedProcedureResponse.Resource
+            };
+        }
+
 
 
         #endregion
@@ -299,6 +371,11 @@ namespace Serilog.Sinks.AzureCosmosDB
             public Exception Exception { get; set; }
             public bool CanRetry { get; set; }
             public int RetryMilliseconds { get; set; }
+        }
+
+        private class BulkInsertVersionResult
+        {
+            public string Version { get; set; }
         }
         #endregion
 

@@ -10,16 +10,18 @@
 		<RepositoryUrl>https://github.com/mahdighorbanpour/serilog-sinks-azurecosmosdb</RepositoryUrl>
 		<Description>A Serilog sink that writes to Azure CosmosDB and supports PartitionKey for better performance. This code is based on serilog-sinks-azuredocumentdb and adapted to use the latest Microsof.Azure.Cosmos SDK version and uses a custom JsonSerializationSettings which helps to keep the sink alive when serialization fails sometimes specially for Exceptions!</Description>
 		<PackageTags>Logging, Logger, Serilog, sink, Azure, CosmosDb, Ilogger</PackageTags>
-		<AssemblyVersion>2.0</AssemblyVersion>
+		<AssemblyVersion>2.0.1</AssemblyVersion>
 		<FileVersion>2.0.1</FileVersion>
 		<PackageVersion>2.0.1</PackageVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
+		<None Remove="Sinks\AzureCosmosDb\bImportVersionCheck.js" />
 		<None Remove="Sinks\AzureCosmosDb\bulkImport.js" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<EmbeddedResource Include="Sinks\AzureCosmosDb\bImportVersionCheck.js" />
 		<EmbeddedResource Include="Sinks\AzureCosmosDb\bulkImport.js" />
 	</ItemGroup>
 
