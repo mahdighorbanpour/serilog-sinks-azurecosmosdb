@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<Authors>Serilog Contributors</Authors>
+		<Product>Sinks.AzCosmosDB</Product>
+		<Company>Serilog</Company>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+		<PackageProjectUrl>https://github.com/tghamm/serilog-sinks-azcosmosdb</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/tghamm/serilog-sinks-azcosmosdb</RepositoryUrl>
+		<Description>A Serilog sink that writes to Azure CosmosDB. Maintained fork of an older library.</Description>
+		<PackageTags>Logging, Logger, Serilog, sink, Azure, CosmosDb, Ilogger</PackageTags>
+		<AssemblyVersion>3.0.0</AssemblyVersion>
+		<FileVersion>3.0.0</FileVersion>
+		<PackageVersion>3.0.0</PackageVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Remove="Sinks\AzCosmosDb\bImportVersionCheck.js" />
+		<None Remove="Sinks\AzCosmosDb\bulkImport.js" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="Sinks\AzCosmosDb\bImportVersionCheck.js" />
+		<EmbeddedResource Include="Sinks\AzCosmosDb\bulkImport.js" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.28.0" />
+		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+		<PackageReference Include="Serilog" Version="2.11.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+		<PackageReference Include="Serilog.Sinks.PeriodicBatching" Version="2.3.1" />
+	</ItemGroup>
+</Project>

@@ -1,7 +1,7 @@
 ﻿using System;
 using Serilog.Events;
 
-namespace Serilog.Sinks.AzureCosmosDB
+namespace Serilog.Sinks.AzCosmosDB
 {
     /// <summary>
     /// Generates a string value to be used for the partition key

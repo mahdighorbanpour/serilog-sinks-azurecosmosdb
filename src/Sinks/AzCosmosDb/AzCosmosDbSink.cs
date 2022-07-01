@@ -33,10 +33,10 @@ using Serilog.Events;
 using Serilog.Sinks.Extensions;
 using Serilog.Sinks.PeriodicBatching;
 
-namespace Serilog.Sinks.AzureCosmosDB
+namespace Serilog.Sinks.AzCosmosDB
 {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "<Pending>")]
-    internal class AzureCosmosDBSink : IBatchedLogEventSink
+    internal class AzCosmosDbSink : IBatchedLogEventSink
     {
         private const string BulkStoredProcedureId = "BulkImport";
         private const string BulkStoredProcedureVersionId = "BulkImportVersion";
@@ -50,7 +50,7 @@ namespace Serilog.Sinks.AzureCosmosDB
         private readonly string _partitionKey = "UtcDate";
         private readonly IPartitionKeyProvider _partitionKeyProvider;
 
-        public AzureCosmosDBSink(CosmosClient client, AzureCosmosDbSinkOptions options)
+        public AzCosmosDbSink(CosmosClient client, AzCosmosDbSinkOptions options)
         {
             _formatProvider = options.FormatProvider;
             _partitionKey = options.PartitionKey;
@@ -80,7 +80,7 @@ namespace Serilog.Sinks.AzureCosmosDB
             CreateDatabaseAndContainerIfNotExistsAsync(options.DatabaseName, options.CollectionName, options.PartitionKey).Wait();
         }
 
-        public AzureCosmosDBSink(AzureCosmosDbSinkOptions options)
+        public AzCosmosDbSink(AzCosmosDbSinkOptions options)
         {
             _formatProvider   = options.FormatProvider;
             _partitionKey = options.PartitionKey;
@@ -150,14 +150,14 @@ namespace Serilog.Sinks.AzureCosmosDB
 
         private Version GetCurrentAssemblyVersion()
         {
-            var currentAssembly = typeof(AzureCosmosDBSink).GetTypeInfo().Assembly;
+            var currentAssembly = typeof(AzCosmosDbSink).GetTypeInfo().Assembly;
             return currentAssembly.GetName().Version;
         }
 
 
         private async Task<string> GetScriptContents(string scriptName)
         {
-            var currentAssembly = typeof(AzureCosmosDBSink).GetTypeInfo().Assembly;
+            var currentAssembly = typeof(AzCosmosDbSink).GetTypeInfo().Assembly;
 
             SelfLog.WriteLine("Getting required resource.");
             var resourceName = currentAssembly.GetManifestResourceNames()
