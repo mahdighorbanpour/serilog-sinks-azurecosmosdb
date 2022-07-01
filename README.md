@@ -1,4 +1,6 @@
 # Serilog.Sinks.AzCosmosDB
+[![.NET](https://github.com/tghamm/serilog-sinks-azcosmosdb/actions/workflows/dotnet.yml/badge.svg)](https://github.com/tghamm/serilog-sinks-azcosmosdb/actions/workflows/dotnet.yml)
+
 A Serilog sink that writes to Azure CosmosDB and supports PartitionKey and PeriodicBatching for better performance. This code is based on [serilog-sinks-azurecosmosdb](https://github.com/mahdighorbanpour/serilog-sinks-azurecosmosdb) and adapted to use modern patterns and practices.
 
 ## Getting started
