@@ -17,7 +17,7 @@ using System.Text;
 using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
 
-namespace Serilog.Sinks.AzureCosmosDB
+namespace Serilog.Sinks.AzCosmosDB
 {
     public class NewtonsoftJsonCosmosSerializer : CosmosSerializer
     {

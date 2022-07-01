@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Serilog.Sinks.AzureCosmosDB
+namespace Serilog.Sinks.AzCosmosDB
 {
-    public class AzureCosmosDbSinkOptions
+    public class AzCosmosDbSinkOptions
     {
         private int _queueSizeLimit;
         ///<summary>
@@ -47,7 +47,7 @@ namespace Serilog.Sinks.AzureCosmosDB
         public bool StoreTimestampInUTC { get; set; }
         public TimeSpan? TimeToLive { get; set; }
 
-        public AzureCosmosDbSinkOptions()
+        public AzCosmosDbSinkOptions()
         {
             this.Period = TimeSpan.FromSeconds(2);
             this.BatchPostingLimit = 100;

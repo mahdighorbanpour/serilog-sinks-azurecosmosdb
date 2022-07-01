@@ -1,11 +1,9 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-using System.Diagnostics;
-using System.Dynamic;
+﻿using System.Dynamic;
+using Microsoft.Azure.Cosmos.Fluent;
 using Microsoft.Extensions.Configuration;
 using Serilog;
-using Serilog.Sinks.AzureCosmosDB;
-using Serilog.Sinks.AzureCosmosDB.TestRunner;
+using Serilog.Sinks.AzCosmosDB;
+using Serilog.Sinks.AzCosmosDB.TestRunner;
 
 IConfiguration configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
@@ -14,13 +12,17 @@ IConfiguration configuration = new ConfigurationBuilder()
 
 Serilog.Debugging.SelfLog.Enable(Console.WriteLine);
 
+var builder =
+    new CosmosClientBuilder(configuration["AppSettings:AzureCosmosUri"], configuration["AppSettings:AzureCosmosKey"])
+        .WithConnectionModeGateway();
+var client = builder.Build();
+
+
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .Destructure.ByTransforming<ExpandoObject>(o => new Dictionary<string, object>(o))
-    .WriteTo.AzureCosmosDB(new AzureCosmosDbSinkOptions()
+    .WriteTo.AzCosmosDB(client, new AzCosmosDbSinkOptions()
     {
-        EndpointUri = new System.Uri(configuration["AppSettings:AzureCosmosUri"]),
-        AuthorizationKey = configuration["AppSettings:AzureCosmosKey"],
         DatabaseName = "TestDb",
         PartitionKey = "guid",
         PartitionKeyProvider = new PartitionKeyProvider()

@@ -6,3 +6,6 @@
 Serilog.Sinks.AzureCosmosDB.TestRunner/bin
 Serilog.Sinks.AzureCosmosDB.TestRunner/obj
 Serilog.Sinks.AzureCosmosDB.TestRunner/appsettings.json
+Serilog.Sinks.AzCosmosDB.TestRunner/bin
+Serilog.Sinks.AzCosmosDB.TestRunner/obj
+Serilog.Sinks.AzCosmosDB.TestRunner/appsettings.json

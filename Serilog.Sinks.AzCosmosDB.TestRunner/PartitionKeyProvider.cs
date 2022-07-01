@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Serilog.Events;
 
-namespace Serilog.Sinks.AzureCosmosDB.TestRunner
+namespace Serilog.Sinks.AzCosmosDB.TestRunner
 {
     public class PartitionKeyProvider: IPartitionKeyProvider
     {
