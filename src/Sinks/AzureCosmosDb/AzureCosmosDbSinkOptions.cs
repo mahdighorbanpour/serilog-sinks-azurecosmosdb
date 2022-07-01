@@ -17,6 +17,12 @@ namespace Serilog.Sinks.AzureCosmosDB
         public TimeSpan Period { get; set; }
 
         /// <summary>
+        /// Disables SSL for use with locally hosted CosmosDB instances. This should not be used in production!
+        /// </summary>
+        public bool DisableSSL { get; set; }
+
+
+        /// <summary>
         /// The maximum number of events that will be held in-memory while waiting to ship them to
         /// Cosmos. Beyond this limit, events will be dropped. The default is 100,000. 
         /// </summary>
